@@ -150,6 +150,9 @@ public class ArtifactExplorerAction implements Action {
     }
 
     /** The explorer page. Enforces the same permission as the classic artifact browser before rendering. */
+    @GET
+    // lgtm[jenkins/csrf]
+    @SuppressWarnings("lgtm[jenkins/csrf]")
     public void doIndex(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException, ServletException {
         checkAccess();
         req.getView(this, "index.jelly").forward(req, rsp);
