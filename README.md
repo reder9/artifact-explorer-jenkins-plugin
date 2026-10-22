@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/jenkinsci/artifact-explorer-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/jenkinsci/artifact-explorer-plugin/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Jenkins](https://img.shields.io/badge/Jenkins-2.555.3%2B-blue.svg)](https://www.jenkins.io/)
 [![SpotBugs](https://img.shields.io/badge/SpotBugs-Passed-brightgreen.svg)](https://spotbugs.github.io/)
 
 A modern, high-performance interactive artifact browser for Jenkins that upgrades build artifact navigation from an antiquated flat HTML directory index into a responsive, searchable tree explorer with rich side-by-side file previews and modernized job and build summary cards.
@@ -204,10 +203,6 @@ http://jenkins.example.com/job/my-job/42/artifact/dist/?legacy=1
 ---
 
 ## Building & Contributing
-
-### Prerequisites
-- JDK 21+
-- Apache Maven 3.9+
 
 ### Build and Test
 ```bash

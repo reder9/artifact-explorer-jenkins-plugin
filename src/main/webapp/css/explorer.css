@@ -221,7 +221,6 @@
 @keyframes ae-flash {
   0%,
   60% {
-    background: rgba(255, 196, 0, 0.35);
     background: color-mix(in srgb, var(--accent-color, #ffc400) 25%, transparent);
   }
   100% {
@@ -352,7 +351,6 @@ button.ae-name {
 
 .ae-results mark {
   /* translucent so the matched text stays readable on light and dark themes */
-  background: rgba(255, 196, 0, 0.35);
   background: color-mix(in srgb, var(--accent-color, #ffc400) 25%, transparent);
   color: inherit;
   border-radius: 0.2rem;
@@ -410,12 +408,12 @@ button.ae-name {
 
 .ae-preview-toggle--active {
   background: var(--primary, #0b69a3);
-  color: #fff;
+  color: var(--white, #fff);
 }
 
 .ae-preview-toggle--active:hover {
   background: var(--primary, #0b69a3);
-  color: #fff;
+  color: var(--white, #fff);
 }
 
 .ae-preview-rendered {
@@ -436,7 +434,7 @@ button.ae-name {
   height: 100%;
   min-height: 25rem;
   border: none;
-  background: #ffffff;
+  background: var(--card-background, #ffffff);
   border-radius: 0 0 6px 6px;
   display: block;
 }
@@ -540,17 +538,14 @@ h4.ae-md-h { font-size: 0.95rem; }
 }
 
 .ae-tok-str {
-  color: #1a7f37;
   color: var(--success-color, #1a7f37);
 }
 
 .ae-tok-num {
-  color: #9a6700;
   color: var(--warning-color, #9a6700);
 }
 
 .ae-tok-bool {
-  color: #8250df;
   color: var(--accent-color, #8250df);
   font-weight: 600;
 }
@@ -579,7 +574,7 @@ h4.ae-md-h { font-size: 0.95rem; }
 .ae-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--modal-backdrop, rgba(0, 0, 0, 0.45));
   backdrop-filter: blur(2px);
   z-index: 1000;
   display: flex;
@@ -597,7 +592,7 @@ h4.ae-md-h { font-size: 0.95rem; }
   color: var(--text-color, #1f2328);
   border: 1px solid var(--ae-border);
   border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--modal-shadow, 0 10px 30px rgba(0, 0, 0, 0.25));
   width: 100%;
   max-width: 520px;
   max-height: 85vh;
@@ -724,15 +719,15 @@ h4.ae-md-h { font-size: 0.95rem; }
 }
 
 .ae-checksum-badge--verified {
-  background: rgba(46, 160, 67, 0.15);
-  border-color: #2ea043;
-  color: #2ea043;
+  background: var(--success-bg, rgba(46, 160, 67, 0.15));
+  border-color: var(--success-color, #2ea043);
+  color: var(--success-color, #2ea043);
 }
 
 .ae-checksum-badge--mismatch {
-  background: rgba(207, 34, 46, 0.15);
-  border-color: #cf222e;
-  color: #cf222e;
+  background: var(--error-bg, rgba(207, 34, 46, 0.15));
+  border-color: var(--error-color, #cf222e);
+  color: var(--error-color, #cf222e);
 }
 
 .ae-checksum-code {
@@ -802,7 +797,7 @@ h4.ae-md-h { font-size: 0.95rem; }
 .ae-pill--active {
   background: var(--primary, #0b69a3) !important;
   border-color: var(--primary, #0b69a3) !important;
-  color: #ffffff !important;
+  color: var(--white, #ffffff) !important;
   font-weight: 600;
 }
 
@@ -816,13 +811,13 @@ h4.ae-md-h { font-size: 0.95rem; }
   border-radius: 9999px;
   font-size: 0.7rem;
   line-height: 1.1;
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--ae-hover, rgba(0, 0, 0, 0.08));
   color: inherit;
 }
 
 .ae-pill--active .ae-pill-count {
-  background: rgba(255, 255, 255, 0.25);
-  color: #ffffff;
+  background: var(--ae-pill-active-bg, rgba(255, 255, 255, 0.25));
+  color: var(--white, #ffffff);
 }
 
 /* Clipboard Fallback Buffer */
@@ -863,7 +858,7 @@ h4.ae-md-h { font-size: 0.95rem; }
   color: var(--text-color, #ffffff);
   border: 1px solid var(--ae-border, #374151);
   border-radius: 9999px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--toast-shadow, 0 8px 24px rgba(0, 0, 0, 0.22));
   font-size: 0.875rem;
   font-weight: 500;
   line-height: 1.3;
