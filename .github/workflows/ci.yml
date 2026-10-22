@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (Java ${{ matrix.java }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        java: [ '21', '25' ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java }}
+          cache: 'maven'
+
+      - name: Build and Test with Maven
+        shell: bash
+        run: |
+          mvn -B -ntp clean verify -Dlicense.disableCheck=true -Dspotbugs.skip=true
+
+      - name: Run SpotBugs Check (Java 21 on Linux)
+        if: matrix.os == 'ubuntu-latest' && matrix.java == '21'
+        shell: bash
+        run: |
+          mvn -B -ntp compile spotbugs:check
+
+      - name: Archive Test Results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: surefire-reports-${{ matrix.os }}-java-${{ matrix.java }}
+          path: target/surefire-reports/
+          if-no-files-found: ignore
+
+  package:
+    name: Package Plugin HPI
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Package HPI
+        run: |
+          mvn -B -ntp clean package -DskipTests
+
+      - name: Upload HPI Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: artifact-explorer.hpi
+          path: target/*.hpi
+
+  ci:
+    name: CI
+    needs: [ test, package ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Status
+        run: |
+          if [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.package.result }}" != "success" ]; then
+            echo "CI checks failed"
+            exit 1
+          fi
+          echo "All matrix tests and packaging succeeded!"

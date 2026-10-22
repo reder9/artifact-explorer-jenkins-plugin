@@ -1,0 +1,5 @@
+<?jelly escape-by-default='true'?>
+<div>
+  Replaces the classic archived-artifacts directory listing with a modern, searchable tree view: lazy-loaded folders,
+  live file search, per-file download and copy-link, and zip download of any folder.
+</div>

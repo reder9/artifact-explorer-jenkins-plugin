@@ -1,0 +1,6 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core">
+  <j:if test="${it.enabled}">
+    <script src="${resURL}/plugin/artifact-explorer/js/summary-tree.js" defer="defer"></script>
+  </j:if>
+</j:jelly>

@@ -1,0 +1,6 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core">
+  <j:if test="${it.enabled}">
+    <link rel="stylesheet" href="${resURL}/plugin/artifact-explorer/css/summary-tree.css"/>
+  </j:if>
+</j:jelly>

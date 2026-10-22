@@ -1,0 +1,48 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:l="/lib/layout" xmlns:t="/lib/hudson">
+  <l:layout title="${%Artifact Explorer} : ${it.run.fullDisplayName}">
+    <st:include page="sidepanel.jelly" it="${it.run}"/>
+    <l:main-panel>
+      <link rel="stylesheet" href="${resURL}/plugin/artifact-explorer/css/explorer.css"/>
+      <t:buildCaption>${%Artifact Explorer}</t:buildCaption>
+      <div id="artifact-explorer" class="ae-root"
+           data-build-url="${it.buildUrl}"
+           data-initial-path="${it.initialPath}"
+           data-label-search="${%Search files}"
+           data-label-expand-all="${%Expand all}"
+           data-label-collapse-all="${%Collapse all}"
+           data-label-download-zip="${%Download as zip}"
+           data-label-download-folder-zip="${%Download folder as zip}"
+           data-label-download="${%Download}"
+           data-label-copy-link="${%Copy link}"
+           data-label-copy-contents="${%Copy file contents}"
+           data-label-open-in-new-tab="${%Open in new tab}"
+           data-label-compute-checksum="${%Compute SHA-256}"
+           data-label-computing-checksum="${%Computing SHA-256...}"
+           data-label-copy-hash="${%Copy hash}"
+           data-label-keyboard-shortcuts="${%Keyboard shortcuts}"
+           data-label-copied="${%Copied}"
+           data-label-toast-link-copied="${%Link copied to clipboard}"
+           data-label-toast-folder-link-copied="${%Folder link copied to clipboard}"
+           data-label-toast-deep-link-copied="${%Shareable deep link copied to clipboard}"
+           data-label-toast-contents-copied="${%File contents copied to clipboard}"
+           data-label-toast-hash-copied="${%SHA-256 hash copied to clipboard}"
+           data-label-copy-failed="${%Could not copy to clipboard}"
+           data-label-reveal="${%Show in tree}"
+           data-label-preview="${%Preview}"
+           data-label-raw="${%View raw}"
+           data-label-close="${%Close preview}"
+           data-label-binary="${%Binary file - preview unavailable}"
+           data-label-preview-truncated="${%Preview truncated to 128 KB}"
+           data-label-empty="${%This directory is empty}"
+           data-label-no-matches="${%No matching files}"
+           data-label-matches="${%matches}"
+           data-label-truncated="${%The listing was truncated. Not all entries are shown.}"
+           data-label-error="${%Could not load artifacts}"
+           data-label-loading="${%Loading...}">
+        <noscript>${%JavaScript is required.} <a href="${it.buildUrl}artifact/${it.initialPath != '' ? it.initialPath + '/' : ''}?legacy=1">${%Classic view}</a></noscript>
+      </div>
+      <script src="${resURL}/plugin/artifact-explorer/js/explorer.js" defer="defer"></script>
+    </l:main-panel>
+  </l:layout>
+</j:jelly>
