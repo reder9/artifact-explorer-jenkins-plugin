@@ -3,6 +3,7 @@ package io.jenkins.plugins.artifactexplorer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import hudson.FilePath;
@@ -15,6 +16,7 @@ import hudson.model.Run;
 import hudson.tasks.ArtifactArchiver;
 import java.io.IOException;
 import jenkins.model.Jenkins;
+import jenkins.security.ResourceDomainConfiguration;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.htmlunit.html.HtmlPage;
@@ -53,7 +55,8 @@ class ArtifactExplorerTest {
     }
 
     private static JSONObject json(JenkinsRule.WebClient wc, String url) throws Exception {
-        return JSONObject.fromObject(wc.goTo(url, "application/json").getWebResponse().getContentAsString());
+        return JSONObject.fromObject(
+                wc.goTo(url, "application/json").getWebResponse().getContentAsString());
     }
 
     @Test
@@ -131,7 +134,8 @@ class ArtifactExplorerTest {
     @Test
     void treeApiListsDirectoriesFirst(JenkinsRule j) throws Exception {
         projectWithArtifacts(j, "p");
-        JSONObject data = json(client(j), "job/p/1/artifact-explorer/tree?path=dist").getJSONObject("data");
+        JSONObject data =
+                json(client(j), "job/p/1/artifact-explorer/tree?path=dist").getJSONObject("data");
         JSONArray entries = data.getJSONArray("entries");
         assertEquals(2, entries.size());
         assertEquals("sub", entries.getJSONObject(0).getString("name"));
@@ -145,8 +149,9 @@ class ArtifactExplorerTest {
     @Test
     void searchIndexContainsAllFiles(JenkinsRule j) throws Exception {
         projectWithArtifacts(j, "p");
-        JSONArray files =
-                json(client(j), "job/p/1/artifact-explorer/searchIndex").getJSONObject("data").getJSONArray("files");
+        JSONArray files = json(client(j), "job/p/1/artifact-explorer/searchIndex")
+                .getJSONObject("data")
+                .getJSONArray("files");
         assertEquals(4, files.size());
         assertTrue(files.contains("dist/sub/deeper/c.css"));
         assertTrue(files.contains("root.txt"));
@@ -156,7 +161,8 @@ class ArtifactExplorerTest {
     void entriesAreTruncatedAtTheConfiguredLimit(JenkinsRule j) throws Exception {
         projectWithArtifacts(j, "p");
         ExplorerConfiguration.get().setMaxEntries(1);
-        JSONObject data = json(client(j), "job/p/1/artifact-explorer/tree?path=dist").getJSONObject("data");
+        JSONObject data =
+                json(client(j), "job/p/1/artifact-explorer/tree?path=dist").getJSONObject("data");
         assertEquals(1, data.getJSONArray("entries").size());
         assertTrue(data.getBoolean("truncated"));
     }
@@ -165,10 +171,16 @@ class ArtifactExplorerTest {
     void traversalAndMissingPathsAreRejected(JenkinsRule j) throws Exception {
         projectWithArtifacts(j, "p");
         JenkinsRule.WebClient wc = client(j);
-        assertEquals("error", json(wc, "job/p/1/artifact-explorer/tree?path=../..").getString("status"));
-        assertEquals("error", json(wc, "job/p/1/artifact-explorer/tree?path=dist/../../x").getString("status"));
-        assertEquals("error", json(wc, "job/p/1/artifact-explorer/tree?path=nope").getString("status"));
-        assertEquals("error", json(wc, "job/p/1/artifact-explorer/tree?path=dist/a.txt").getString("status"));
+        assertEquals(
+                "error", json(wc, "job/p/1/artifact-explorer/tree?path=../..").getString("status"));
+        assertEquals(
+                "error",
+                json(wc, "job/p/1/artifact-explorer/tree?path=dist/../../x").getString("status"));
+        assertEquals(
+                "error", json(wc, "job/p/1/artifact-explorer/tree?path=nope").getString("status"));
+        assertEquals(
+                "error",
+                json(wc, "job/p/1/artifact-explorer/tree?path=dist/a.txt").getString("status"));
     }
 
     @Test
@@ -188,13 +200,20 @@ class ArtifactExplorerTest {
                     .to("bob"));
 
             JenkinsRule.WebClient alice = client(j).login("alice");
-            alice.assertFails("job/p/1/artifact-explorer/tree?path=dist", 403);
-            alice.assertFails("job/p/1/artifact-explorer/searchIndex", 403);
-            alice.assertFails("job/p/1/artifact-explorer/preview?path=dist/a.txt", 403);
-            alice.assertFails("job/p/1/artifact-explorer/", 403);
+            alice.assertFails("job/p/1/artifact-explorer/tree?path=dist", 404);
+            alice.assertFails("job/p/1/artifact-explorer/searchIndex", 404);
+            alice.assertFails("job/p/1/artifact-explorer/preview?path=dist/a.txt", 404);
+            alice.assertFails("job/p/1/artifact-explorer/sha256?path=dist/a.txt", 404);
+            alice.assertFails("job/p/1/artifact-explorer/", 404);
+            alice.assertFails("job/p/1/artifact/dist/", 403);
 
             JenkinsRule.WebClient bob = client(j).login("bob");
-            assertEquals("ok", json(bob, "job/p/1/artifact-explorer/tree?path=dist").getString("status"));
+            assertEquals(
+                    "ok", json(bob, "job/p/1/artifact-explorer/tree?path=dist").getString("status"));
+            assertEquals(
+                    "ok",
+                    json(bob, "job/p/1/artifact-explorer/sha256?path=dist/a.txt")
+                            .getString("status"));
             assertNotNull(bob.goTo("job/p/1/artifact/dist/").getElementById("artifact-explorer"));
         } finally {
             if (previous == null) {
@@ -232,9 +251,13 @@ class ArtifactExplorerTest {
         assertEquals("hello", data.getString("text"));
 
         // Directories, missing files and traversal are rejected
-        assertEquals("error", json(wc, "job/p/1/artifact-explorer/preview?path=dist").getString("status"));
-        assertEquals("error", json(wc, "job/p/1/artifact-explorer/preview?path=dist/nope.txt").getString("status"));
-        assertEquals("error", json(wc, "job/p/1/artifact-explorer/preview?path=../x").getString("status"));
+        assertEquals(
+                "error", json(wc, "job/p/1/artifact-explorer/preview?path=dist").getString("status"));
+        assertEquals(
+                "error",
+                json(wc, "job/p/1/artifact-explorer/preview?path=dist/nope.txt").getString("status"));
+        assertEquals(
+                "error", json(wc, "job/p/1/artifact-explorer/preview?path=../x").getString("status"));
 
         // Direct truncation check on ArtifactTree.preview
         ArtifactTree.FilePreview truncated = ArtifactTree.preview(p.getLastBuild(), "dist/a.txt", 3);
@@ -262,8 +285,13 @@ class ArtifactExplorerTest {
         anon.assertFails("job/p-read-perm/1/artifact-explorer/", 404);
 
         JenkinsRule.WebClient reader = client(j).login("reader");
-        assertEquals("ok", json(reader, "job/p-read-perm/1/artifact-explorer/tree?path=dist").getString("status"));
-        assertEquals("ok", json(reader, "job/p-read-perm/1/artifact-explorer/searchIndex").getString("status"));
+        assertEquals(
+                "ok",
+                json(reader, "job/p-read-perm/1/artifact-explorer/tree?path=dist")
+                        .getString("status"));
+        assertEquals(
+                "ok",
+                json(reader, "job/p-read-perm/1/artifact-explorer/searchIndex").getString("status"));
     }
 
     @Test
@@ -304,7 +332,7 @@ class ArtifactExplorerTest {
             public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
                     throws InterruptedException, IOException {
                 FilePath ws = build.getWorkspace();
-                ws.child("data.bin").copyFrom(new java.io.ByteArrayInputStream(new byte[] { 0x01, 0x00, 0x02, 0x03 }));
+                ws.child("data.bin").copyFrom(new java.io.ByteArrayInputStream(new byte[] {0x01, 0x00, 0x02, 0x03}));
                 return true;
             }
         });
@@ -317,5 +345,102 @@ class ArtifactExplorerTest {
         JSONObject data = res.getJSONObject("data");
         assertTrue(data.getBoolean("binary"));
         assertEquals(null, data.opt("text"));
+    }
+
+    @Test
+    void sha256ApiComputesDigestAndRejectsInvalidPaths(JenkinsRule j) throws Exception {
+        projectWithArtifacts(j, "p");
+        JenkinsRule.WebClient wc = client(j);
+
+        JSONObject ok = json(wc, "job/p/1/artifact-explorer/sha256?path=dist/a.txt");
+        assertEquals("ok", ok.getString("status"));
+        assertEquals(
+                "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+                ok.getJSONObject("data").getString("sha256"));
+
+        assertEquals(
+                "error", json(wc, "job/p/1/artifact-explorer/sha256?path=dist").getString("status"));
+        assertEquals(
+                "error",
+                json(wc, "job/p/1/artifact-explorer/sha256?path=dist/nope.txt").getString("status"));
+        assertEquals(
+                "error", json(wc, "job/p/1/artifact-explorer/sha256?path=../x").getString("status"));
+    }
+
+    @Test
+    void sha256RefusesFilesLargerThanTheLimit(JenkinsRule j) throws Exception {
+        FreeStyleProject p = projectWithArtifacts(j, "p");
+        Run<?, ?> run = p.getLastBuild();
+
+        // "hello" is 5 bytes: fine at the limit, rejected just below it
+        assertEquals(
+                "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+                ArtifactTree.sha256(run, "dist/a.txt", 5));
+        assertThrows(ArtifactTree.TooLargeException.class, () -> ArtifactTree.sha256(run, "dist/a.txt", 4));
+
+        // Missing files and directories still report "not a file" rather than a size error
+        assertEquals(null, ArtifactTree.sha256(run, "dist", 4));
+        assertEquals(null, ArtifactTree.sha256(run, "dist/nope.txt", 4));
+    }
+
+    @Test
+    void worksWithResourceRootUrlConfigured(JenkinsRule j) throws Exception {
+        projectWithArtifacts(j, "p");
+        String resourceRoot =
+                "http://127.0.0.1:" + j.getURL().getPort() + j.getURL().getPath();
+        ResourceDomainConfiguration.get().setUrl(resourceRoot);
+        assertTrue(ResourceDomainConfiguration.isResourceDomainConfigured(), "Resource Root URL should be active");
+
+        JenkinsRule.WebClient wc = client(j);
+
+        // Explorer page renders on the Jenkins controller URL
+        HtmlPage page = wc.goTo("job/p/1/artifact/dist/");
+        assertNotNull(page.getElementById("artifact-explorer"));
+        assertEquals("dist", page.getElementById("artifact-explorer").getAttribute("data-initial-path"));
+
+        // Controller-origin JSON endpoints work without cross-origin fetches
+        assertEquals("ok", json(wc, "job/p/1/artifact-explorer/tree?path=dist").getString("status"));
+        assertEquals(
+                "hello",
+                json(wc, "job/p/1/artifact-explorer/preview?path=dist/a.txt")
+                        .getJSONObject("data")
+                        .getString("text"));
+        assertEquals(
+                "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+                json(wc, "job/p/1/artifact-explorer/sha256?path=dist/a.txt")
+                        .getJSONObject("data")
+                        .getString("sha256"));
+
+        // File download redirects to the Resource Root domain (/static-files/...) and serves the artifact
+        var fileResp = wc.goTo("job/p/1/artifact/dist/a.txt", null).getWebResponse();
+        assertEquals("hello", fileResp.getContentAsString());
+        assertTrue(
+                fileResp.getWebRequest().getUrl().toString().startsWith("http://127.0.0.1:"),
+                "Artifact download should be served from Resource Root URL");
+    }
+
+    @Test
+    void explorerJellyUsesRunSubpageAdjunctAndDialog(JenkinsRule j) throws Exception {
+        projectWithArtifacts(j, "p");
+        HtmlPage page = client(j).goTo("job/p/1/artifact/");
+        assertNotNull(page.getElementById("artifact-explorer"));
+        assertNotNull(page.getElementById("ae-searchinput"), "static search input should be rendered in Jelly");
+        assertNotNull(page.getElementById("ae-expandall"), "static expand button should be rendered in Jelly");
+        assertNotNull(page.getElementById("ae-collapseall"), "static collapse button should be rendered in Jelly");
+        assertNotNull(page.getElementById("ae-ziplink"), "static zip link should be rendered in Jelly");
+        var helpBtn = page.getElementById("ae-helpbtn");
+        assertNotNull(helpBtn, "static help button should be rendered in Jelly");
+        assertEquals("dialog-opener", helpBtn.getAttribute("data-type"));
+        String dialogId = helpBtn.getAttribute("data-dialog-id");
+        assertFalse(dialogId.isEmpty(), "help button should reference l:dialog id");
+
+        String html = page.asXml();
+        assertTrue(
+                html.contains("io/jenkins/plugins/artifactexplorer/ArtifactExplorerAction/explorer.js"),
+                "explorer.js should be loaded via st:adjunct");
+        assertTrue(
+                html.contains("io/jenkins/plugins/artifactexplorer/ArtifactExplorerAction/explorer.css"),
+                "explorer.css should be loaded via st:adjunct");
+        assertFalse(html.contains("<noscript"), "noscript tag should not be present");
     }
 }

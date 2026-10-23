@@ -20,7 +20,8 @@
   function svgIcon(kind) {
     const ns = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(ns, 'svg');
-    svg.setAttribute('viewBox', '0 0 16 16');
+    // The "external" glyph is the ionicons "open" icon (512 unit grid), same as Jenkins' own external.svg
+    svg.setAttribute('viewBox', kind === 'external' ? '0 0 512 512' : '0 0 16 16');
     svg.setAttribute('class', 'ae-sum-icon ae-sum-icon--' + kind);
     svg.setAttribute('aria-hidden', 'true');
     const path = document.createElementNS(ns, 'path');
@@ -30,13 +31,16 @@
       caret: 'M6 3.5l4.5 4.5L6 12.5',
       tree: 'M8 1v14M8 4H4m4 4H3m5 4H4M8 3h4m-4 4h5m-5 4h4',
       flat: 'M3 3h10M3 7h10M3 11h10M3 15h6',
-      external: 'M6 3h7v7M13 3L6.5 9.5M10 8v5a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5',
+      external: 'M384 224v184a40 40 0 01-40 40H104a40 40 0 01-40-40V168a40 40 0 0140-40h167.48M336 64h112v112M224 288L440 72',
       download: 'M8 2v8m0 0L5 7m3 3l3-3M3 13h10',
       package: 'M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6z',
       copy: 'M5 4h6a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm-2 8V3a1 1 0 0 1 1-1h7',
       check: 'M3.5 8.5l3 3 6-7'
     };
     path.setAttribute('d', shapes[kind] || shapes.file);
+    if (kind === 'external') {
+      path.setAttribute('stroke-width', '32');
+    }
     svg.appendChild(path);
     return svg;
   }
@@ -73,50 +77,14 @@
     return fragment;
   }
 
-  let toastContainer = null;
-  let toastTimer = null;
-
-  function showToast(message, iconKind) {
-    if (!message) return;
-    if (!toastContainer) {
-      toastContainer = el('div', 'ae-toast-container');
-      toastContainer.setAttribute('role', 'status');
-      toastContainer.setAttribute('aria-live', 'polite');
-      document.body.appendChild(toastContainer);
+  function notify(message, isWarning) {
+    if (!message) {
+      return;
     }
-    toastContainer.replaceChildren();
-    if (toastTimer) {
-      window.clearTimeout(toastTimer);
-      toastTimer = null;
+    if (window.notificationBar && typeof window.notificationBar.show === 'function') {
+      const type = isWarning ? window.notificationBar.WARNING : window.notificationBar.SUCCESS;
+      window.notificationBar.show(message, type);
     }
-
-    const toast = el('div', 'ae-toast');
-    const icon = el('span', 'ae-toast-icon');
-    icon.appendChild(svgIcon(iconKind || 'check'));
-    const text = el('span', 'ae-toast-msg', message);
-    toast.append(icon, text);
-    toast.addEventListener('click', () => {
-      toast.classList.remove('ae-toast--visible');
-      window.setTimeout(() => {
-        if (toast.parentNode) {
-          toast.remove();
-        }
-      }, 200);
-    });
-    toastContainer.appendChild(toast);
-
-    requestAnimationFrame(() => {
-      toast.classList.add('ae-toast--visible');
-    });
-
-    toastTimer = window.setTimeout(() => {
-      toast.classList.remove('ae-toast--visible');
-      window.setTimeout(() => {
-        if (toast.parentNode) {
-          toast.remove();
-        }
-      }, 250);
-    }, 2400);
   }
 
   async function copyTextToClipboard(text) {
@@ -625,13 +593,13 @@
       if (success) {
         copyBtn.textContent = ' Copied!';
         copyBtn.prepend(svgIcon('check'));
-        showToast('MD5 checksum copied to clipboard');
+        notify('MD5 checksum copied to clipboard');
         setTimeout(() => {
           copyBtn.textContent = ' Copy';
           copyBtn.prepend(svgIcon('copy'));
         }, 2000);
       } else {
-        showToast('Could not copy to clipboard', 'copy');
+        notify('Could not copy to clipboard', true);
       }
     });
     hashRow.append(hashLabel, hashVal, copyBtn);

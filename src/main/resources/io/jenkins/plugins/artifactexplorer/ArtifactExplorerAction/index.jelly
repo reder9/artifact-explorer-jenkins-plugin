@@ -1,48 +1,114 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:l="/lib/layout" xmlns:t="/lib/hudson">
-  <l:layout title="${%Artifact Explorer} : ${it.run.fullDisplayName}">
-    <st:include page="sidepanel.jelly" it="${it.run}"/>
-    <l:main-panel>
-      <link rel="stylesheet" href="${resURL}/plugin/artifact-explorer/css/explorer.css"/>
-      <t:buildCaption>${%Artifact Explorer}</t:buildCaption>
-      <div id="artifact-explorer" class="ae-root"
-           data-build-url="${it.buildUrl}"
-           data-initial-path="${it.initialPath}"
-           data-label-search="${%Search files}"
-           data-label-expand-all="${%Expand all}"
-           data-label-collapse-all="${%Collapse all}"
-           data-label-download-zip="${%Download as zip}"
-           data-label-download-folder-zip="${%Download folder as zip}"
-           data-label-download="${%Download}"
-           data-label-copy-link="${%Copy link}"
-           data-label-copy-contents="${%Copy file contents}"
-           data-label-open-in-new-tab="${%Open in new tab}"
-           data-label-compute-checksum="${%Compute SHA-256}"
-           data-label-computing-checksum="${%Computing SHA-256...}"
-           data-label-copy-hash="${%Copy hash}"
-           data-label-keyboard-shortcuts="${%Keyboard shortcuts}"
-           data-label-copied="${%Copied}"
-           data-label-toast-link-copied="${%Link copied to clipboard}"
-           data-label-toast-folder-link-copied="${%Folder link copied to clipboard}"
-           data-label-toast-deep-link-copied="${%Shareable deep link copied to clipboard}"
-           data-label-toast-contents-copied="${%File contents copied to clipboard}"
-           data-label-toast-hash-copied="${%SHA-256 hash copied to clipboard}"
-           data-label-copy-failed="${%Could not copy to clipboard}"
-           data-label-reveal="${%Show in tree}"
-           data-label-preview="${%Preview}"
-           data-label-raw="${%View raw}"
-           data-label-close="${%Close preview}"
-           data-label-binary="${%Binary file - preview unavailable}"
-           data-label-preview-truncated="${%Preview truncated to 128 KB}"
-           data-label-empty="${%This directory is empty}"
-           data-label-no-matches="${%No matching files}"
-           data-label-matches="${%matches}"
-           data-label-truncated="${%The listing was truncated. Not all entries are shown.}"
-           data-label-error="${%Could not load artifacts}"
-           data-label-loading="${%Loading...}">
-        <noscript>${%JavaScript is required.} <a href="${it.buildUrl}artifact/${it.initialPath != '' ? it.initialPath + '/' : ''}?legacy=1">${%Classic view}</a></noscript>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:l="/lib/layout">
+  <l:run-subpage>
+    <st:adjunct includes="io.jenkins.plugins.artifactexplorer.ArtifactExplorerAction.explorer"/>
+    <l:dialog title="${%Keyboard shortcuts}">
+      <div class="ae-modal-body">
+        <div class="ae-shortcut-group">
+          <div class="ae-shortcut-group-title">${%Navigation}</div>
+          <div class="ae-shortcut-row">
+            <span>${%Focus search filter}</span>
+            <span class="ae-shortcut-keys"><kbd class="ae-kbd">/</kbd></span>
+          </div>
+          <div class="ae-shortcut-row">
+            <span>${%Navigate items down / up}</span>
+            <span class="ae-shortcut-keys"><kbd class="ae-kbd">j</kbd><kbd class="ae-kbd">k</kbd></span>
+          </div>
+          <div class="ae-shortcut-row">
+            <span>${%Collapse / expand folder}</span>
+            <span class="ae-shortcut-keys"><kbd class="ae-kbd">&#8592;</kbd><kbd class="ae-kbd">&#8594;</kbd></span>
+          </div>
+          <div class="ae-shortcut-row">
+            <span>${%Open preview or toggle folder}</span>
+            <span class="ae-shortcut-keys"><kbd class="ae-kbd">Enter</kbd><kbd class="ae-kbd">o</kbd></span>
+          </div>
+        </div>
+        <div class="ae-shortcut-group">
+          <div class="ae-shortcut-group-title">${%Actions}</div>
+          <div class="ae-shortcut-row">
+            <span>${%Copy file contents}</span>
+            <span class="ae-shortcut-keys"><kbd class="ae-kbd">c</kbd></span>
+          </div>
+          <div class="ae-shortcut-row">
+            <span>${%Copy shareable deep link}</span>
+            <span class="ae-shortcut-keys"><kbd class="ae-kbd">l</kbd></span>
+          </div>
+          <div class="ae-shortcut-row">
+            <span>${%Compute SHA-256 checksum}</span>
+            <span class="ae-shortcut-keys"><kbd class="ae-kbd">s</kbd></span>
+          </div>
+          <div class="ae-shortcut-row">
+            <span>${%Download active file}</span>
+            <span class="ae-shortcut-keys"><kbd class="ae-kbd">d</kbd></span>
+          </div>
+          <div class="ae-shortcut-row">
+            <span>${%Close preview / dismiss modal}</span>
+            <span class="ae-shortcut-keys"><kbd class="ae-kbd">Esc</kbd></span>
+          </div>
+          <div class="ae-shortcut-row">
+            <span>${%Toggle shortcuts cheatsheet}</span>
+            <span class="ae-shortcut-keys"><kbd class="ae-kbd">?</kbd></span>
+          </div>
+        </div>
       </div>
-      <script src="${resURL}/plugin/artifact-explorer/js/explorer.js" defer="defer"></script>
-    </l:main-panel>
-  </l:layout>
+    </l:dialog>
+    <div id="artifact-explorer" class="ae-root"
+         data-build-url="${it.buildUrl}"
+         data-initial-path="${it.initialPath}"
+         data-label-artifacts-root="${%Artifacts}"
+         data-label-all="${%All}"
+         data-label-download-folder-zip="${%Download folder as zip}"
+         data-label-download="${%Download}"
+         data-label-copy-link="${%Copy link}"
+         data-label-copy-contents="${%Copy file contents}"
+         data-label-open-in-new-tab="${%Open in new tab}"
+         data-label-compute-checksum="${%Compute SHA-256}"
+         data-label-computing-checksum="${%Computing SHA-256...}"
+         data-label-copy-hash="${%Copy hash}"
+         data-label-copied="${%Copied}"
+         data-label-toast-link-copied="${%Link copied to clipboard}"
+         data-label-toast-folder-link-copied="${%Folder link copied to clipboard}"
+         data-label-toast-deep-link-copied="${%Shareable deep link copied to clipboard}"
+         data-label-toast-contents-copied="${%File contents copied to clipboard}"
+         data-label-toast-hash-copied="${%SHA-256 hash copied to clipboard}"
+         data-label-copy-failed="${%Could not copy to clipboard}"
+         data-label-reveal="${%Show in tree}"
+         data-label-preview="${%Preview}"
+         data-label-raw="${%View raw}"
+         data-label-close="${%Close preview}"
+         data-label-binary="${%Binary file - preview unavailable}"
+         data-label-preview-truncated="${%Preview truncated to 128 KB}"
+         data-label-empty="${%This directory is empty}"
+         data-label-no-matches="${%No matching files}"
+         data-label-matches="${%matches}"
+         data-label-truncated="${%The listing was truncated. Not all entries are shown.}"
+         data-label-error="${%Could not load artifacts}"
+         data-label-loading="${%Loading...}">
+      <div class="ae-toolbar">
+        <input id="ae-searchinput" type="search" class="jenkins-input ae-search" aria-label="${%Search files}" placeholder="${%Search files}  ( / )" autocomplete="off"/>
+        <button id="ae-expandall" type="button" class="jenkins-button">${%Expand all}</button>
+        <button id="ae-collapseall" type="button" class="jenkins-button">${%Collapse all}</button>
+        <a id="ae-ziplink" class="jenkins-button ae-download-zip">${%Download as zip}</a>
+        <button id="ae-helpbtn"
+                type="button"
+                class="jenkins-button"
+                title="${%Keyboard shortcuts}"
+                aria-label="${%Keyboard shortcuts}"
+                data-type="dialog-opener"
+                data-dialog-id="${dialogId}">
+          <l:icon src="symbol-help-circle" />
+        </button>
+      </div>
+      <div id="ae-pills-bar" class="ae-pills-bar" role="toolbar" aria-label="${%File extension filters}" hidden="hidden"/>
+      <nav id="ae-breadcrumb" class="ae-breadcrumb" aria-label="${%Path}" hidden="hidden"/>
+      <div id="ae-status" class="ae-status" role="status"/>
+      <div id="ae-workspace" class="ae-workspace">
+        <div id="ae-main" class="ae-main">
+          <div id="ae-tree" class="ae-tree"/>
+          <div id="ae-results" class="ae-results" hidden="hidden"/>
+        </div>
+        <aside id="ae-preview" class="ae-preview" aria-label="${%Preview}" hidden="hidden"/>
+      </div>
+    </div>
+  </l:run-subpage>
 </j:jelly>

@@ -48,9 +48,9 @@ Seamlessly replaces the directory listing at `.../artifact/<dir>/` with a split-
 - **Syntax Coloration for Configs & Code (`.json`, `.yaml`, `.xml`, `.properties`, `.env`, `.sh`)**: Zero-dependency tokenizer highlights object keys, string literals, numbers, booleans, nulls, XML elements, and comments. Adapts cleanly across light and dark themes using Jenkins CSS variables.
 - **Binary Detection**: Automatically identifies binary and compiled archives (`.tar.gz`, `.zip`, `.jar`), providing metadata details and direct download actions rather than corrupt terminal dumps.
 - **One-Click Extension Filter Pills**: Dynamically scans all artifacts in the build to discover present file extensions and displays responsive filter pills with file count badges (e.g. `[ All (17) ]`, `[ .json (4) ]`, `[ .yaml (2) ]`, `[ .log (1) ]`, `[ .tar.gz (1) ]`). Clicking any pill instantly isolates files of that format across both the tree and flat listings, with support for combined text search refinement.
-- **Client-Side SHA-256 Checksum Verifier**: One-click or shortcut (`s`) client-side SHA-256 cryptographic hash computation directly in the browser using the Web Crypto API (`crypto.subtle`) with pure JavaScript fallback. Automatically scans the build's manifest files (`*.sha256`, `checksums.sha256`) and verifies the computed hash against recorded entries, displaying a green `Verified Match` or red `Checksum Mismatch` badge alongside one-click hash copying.
+- **SHA-256 Checksum Verifier**: One-click or shortcut (`s`) SHA-256 hash computation. The digest is computed on the Jenkins controller through the permission-checked `sha256` endpoint (files above 1 GiB are refused), so the browser never needs to fetch artifact bytes itself and the feature keeps working when artifacts are served from a [Resource Root URL](https://www.jenkins.io/doc/book/security/user-content/#resource-root-url). Automatically scans the build's manifest files (`*.sha256`, `checksums.sha256`) and verifies the computed hash against recorded entries, displaying a green `Verified Match` or red `Checksum Mismatch` badge alongside one-click hash copying.
 - **Developer Ergonomics & Vim-Style Navigation**:
-  - `?`: Toggles the interactive Keyboard Shortcuts Cheatsheet modal.
+  - `?`: Toggles the Keyboard Shortcuts dialog (a standard Jenkins `l:dialog`, also reachable from the help button in the toolbar).
   - `/`: Instantly focuses and selects the search filter.
   - `j` / `k`: Vim-style item navigation down and up through visible tree rows.
   - `o` / `Enter`: Expands/collapses directories or opens file preview.
@@ -58,9 +58,9 @@ Seamlessly replaces the directory listing at `.../artifact/<dir>/` with a split-
   - `l`: Copies deep link URL.
   - `d`: Downloads the active file.
   - `s`: Computes SHA-256 checksum.
-  - `Escape`: Dismisses cheatsheet modal, clears search filter, or closes preview.
+  - `Escape`: Closes the shortcuts dialog, clears the search filter, or closes the preview.
 
-| Keyboard Shortcuts Modal (`?`) | Cryptographic SHA-256 Verifier (`s`) |
+| Keyboard Shortcuts Dialog (`?`) | SHA-256 Verifier (`s`) and Notification (`l`) |
 |---|---|
 | ![Keyboard Shortcuts Cheatsheet](docs/images/ergonomics_shortcuts_modal.png) | ![SHA-256 Checksum Verification](docs/images/checksum_verified_preview.png) |
 
@@ -69,12 +69,12 @@ Seamlessly replaces the directory listing at `.../artifact/<dir>/` with a split-
 | ![Explorer Filter Pills](docs/images/tier3_pills_json_filtered.png) | ![Summary Card Filter Pills](docs/images/tier3_summary_pills_filtered.png) |
 
 - **URL Hash Deep-Linking & Sharing**: The URL hash dynamically updates as files are inspected (e.g. `.../artifact/dist/#reports/security/trivy-scan.json`). Opening or sharing a link automatically expands all parent directories, scrolls to and flashes the row, and opens the preview pane. Closing the preview clears the hash.
-- **Quick-Action Preview Header & Clipboard Toast Feedback**:
+- **Quick-Action Preview Header & Clipboard Notifications**:
   - **SHA-256 Checksum**: Calculate and verify cryptographic hash on demand.
-  - **Copy File Contents**: Copy text content or pretty-formatted JSON directly to clipboard with instant checkmark swap and floating toast notification (`File contents copied to clipboard`).
+  - **Copy File Contents**: Copy text content or pretty-formatted JSON directly to clipboard with instant checkmark swap and a standard Jenkins notification (`File contents copied to clipboard`).
   - **Open in New Tab**: Launch full-page report views via Jenkins' native `/*view*/` endpoint.
   - **Direct Download & View Raw**: One-click raw file inspection or direct file download.
-  - **Copy Link**: Copy shareable deep link URLs or direct artifact links with dual-layer clipboard support (Web Clipboard API + `execCommand` fallback) and floating toast notification (`Link copied to clipboard`).
+  - **Copy Link**: Copy shareable deep link URLs or direct artifact links with dual-layer clipboard support (Web Clipboard API + `execCommand` fallback) and a standard Jenkins notification (`Link copied to clipboard`).
 - **Subfolder-Level Zip Downloads**: Download any directory tree as a compressed `.zip` archive on hover directly from the tree rows (`<subfolder>/*zip*/<subfolder>.zip`).
 
 ---
@@ -116,7 +116,7 @@ flowchart TD
     Req["Incoming Browser Request\n&lt;build&gt;/artifact/&lt;path&gt;/"] --> Filter{"ArtifactExplorerFilter\n(isBrowserGet &amp;&amp; !legacy)"}
     Filter -- "Directory GET" --> Action["ArtifactExplorerAction\n(/artifact-explorer/)"]
     Filter -- "File Download / *zip* / ?legacy=1" --> Core["DirectoryBrowserSupport\n(Jenkins Core Handler)"]
-    Action --> TreeAPI["ArtifactTree API\n(/tree, /searchIndex, /preview)"]
+    Action --> TreeAPI["ArtifactTree API\n(/tree, /searchIndex, /preview, /sha256)"]
     TreeAPI --> Guard{"SymlinkGuard &amp;\nPermission Check"}
     Guard -- "Authorized &amp; Valid" --> VFile["VirtualFile Artifacts Root\n(Local Disk / S3 / Custom)"]
     Guard -- "Unauthorized / Escape" --> Deny["403 Forbidden / 404 Concealed"]
@@ -134,13 +134,13 @@ flowchart TD
 
 ## Security & Access Control
 
-- **Permission Checking**: Strictly enforces `Run.ARTIFACTS` when enabled, with automatic fallback to `Item.READ`. Unauthorized requests fail early without disclosing job or artifact metadata.
+- **Permission Checking**: Strictly enforces `Run.ARTIFACTS` when enabled, with automatic fallback to `Item.READ`. The explorer action is only attached to a build when the current user holds that permission, so unauthorized requests never reach the explorer and disclose no job or artifact metadata.
 - **Path Traversal Protection**: Every requested path is normalized and sanitized (`ArtifactTree.sanitize`), rejecting parent directory escapes (`..`), backslashes (`\`), null bytes (`\0`), and double slashes.
 - **Symlink Guard**: Re-evaluates real filesystem paths on disk (`Path.toRealPath()`) to prevent symlinks from escaping the artifact root, honoring `DirectoryBrowserSupport.allowSymlinkEscape`.
 - **Content Security Policy (CSP)**:
   - All rendered markdown escapes raw HTML entities prior to parsing.
   - HTML artifact previews execute in a sandboxed iframe without `allow-scripts`.
-  - Zero inline `<script>` or `onclick` handlers.
+  - Zero inline `<script>`, `onclick` handlers or `style` attributes in generated markup.
 
 ---
 
@@ -193,6 +193,10 @@ unclassified:
     replaceClassicBrowser: true
     maxEntries: 5000
 ```
+
+### Resource Root URL
+
+The explorer is compatible with Jenkins' [Resource Root URL](https://www.jenkins.io/doc/book/security/user-content/#resource-root-url). The explorer page and all of its JSON requests (`tree`, `searchIndex`, `preview`, `sha256`) stay on the regular Jenkins URL, while file downloads, raw views and the sandboxed HTML preview follow Jenkins' own redirect to the resource domain. Requests on the resource domain (`/static-files/...`) do not match the explorer's routes, so they are always served by Jenkins core untouched.
 
 ### URL Escape Hatch
 To view the classic Jenkins directory listing for any build directory without disabling the plugin globally, append `?legacy=1` to the directory URL:

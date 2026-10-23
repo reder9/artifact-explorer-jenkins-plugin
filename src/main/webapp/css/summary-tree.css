@@ -1,7 +1,7 @@
 /* Artifact Explorer: Summary Tree & Flat Views (Job & Build Overviews) */
 
 .ae-sum-wrapper {
-  --ae-border: var(--light-grey, #d9dde3);
+  --ae-border: var(--jenkins-border-color, #d9dde3);
   --ae-hover: var(--item-background--hover, rgba(127, 127, 127, 0.12));
   --ae-muted: var(--text-color-secondary, #6b7280);
   --ae-folder: var(--orange, #e8a317);
@@ -282,7 +282,7 @@
    ======================================================== */
 
 .ae-fp-container {
-  --ae-border: var(--light-grey, #d9dde3);
+  --ae-border: var(--jenkins-border-color, #d9dde3);
   --ae-hover: var(--item-background--hover, rgba(127, 127, 127, 0.12));
   --ae-muted: var(--text-color-secondary, #6b7280);
 
@@ -614,68 +614,6 @@
   background: transparent !important;
   opacity: 0 !important;
   pointer-events: none !important;
-}
-
-/* Toast Notifications */
-.ae-toast-container {
-  position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  pointer-events: none;
-}
-
-.ae-toast {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.6rem 1.25rem;
-  background: var(--card-background, #1f242c);
-  color: var(--text-color, #ffffff);
-  border: 1px solid var(--ae-border, #374151);
-  border-radius: 9999px;
-  box-shadow: var(--toast-shadow, 0 8px 24px rgba(0, 0, 0, 0.22));
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1.3;
-  pointer-events: auto;
-  cursor: pointer;
-  opacity: 0;
-  transform: translateY(14px) scale(0.96);
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
-}
-
-.ae-toast--visible {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-.ae-toast-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.1rem;
-  height: 1.1rem;
-  color: var(--success-color, #10b981);
-  flex-shrink: 0;
-}
-
-.ae-toast-icon svg {
-  width: 1.1rem;
-  height: 1.1rem;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  fill: none;
-}
-
-.ae-toast-msg {
-  white-space: nowrap;
 }
 
 

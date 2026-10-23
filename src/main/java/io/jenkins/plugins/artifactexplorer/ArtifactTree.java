@@ -9,9 +9,12 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import jenkins.util.SystemProperties;
@@ -25,8 +28,7 @@ import jenkins.util.VirtualFile;
 public final class ArtifactTree {
 
     /** Mirrors the opt-out that {@link DirectoryBrowserSupport} honours. */
-    private static final String ALLOW_SYMLINK_ESCAPE =
-            DirectoryBrowserSupport.class.getName() + ".allowSymlinkEscape";
+    private static final String ALLOW_SYMLINK_ESCAPE = DirectoryBrowserSupport.class.getName() + ".allowSymlinkEscape";
 
     private ArtifactTree() {}
 
@@ -158,8 +160,7 @@ public final class ArtifactTree {
             }
             boolean isDir = child.isDirectory();
             String childPath = clean.isEmpty() ? child.getName() : clean + "/" + child.getName();
-            entries.add(new Entry(
-                    child.getName(), childPath, isDir, isDir ? 0 : child.length(), child.lastModified()));
+            entries.add(new Entry(child.getName(), childPath, isDir, isDir ? 0 : child.length(), child.lastModified()));
         }
         entries.sort(Comparator.comparing(Entry::directory)
                 .reversed()
@@ -203,16 +204,8 @@ public final class ArtifactTree {
     @CheckForNull
     public static FilePreview preview(Run<?, ?> run, String path, int maxBytes) throws IOException {
         String clean = sanitize(path);
-        if (clean.isEmpty()) {
-            return null;
-        }
-        VirtualFile root = run.getArtifactManager().root();
-        if (root == null || !root.exists() || !root.isDirectory()) {
-            return null;
-        }
-        SymlinkGuard guard = new SymlinkGuard(root);
-        VirtualFile file = resolve(root, clean);
-        if (!file.isFile() || guard.escapes(file)) {
+        VirtualFile file = resolveReadableFile(run, clean);
+        if (file == null) {
             return null;
         }
         long size = file.length();
@@ -236,5 +229,73 @@ public final class ArtifactTree {
         }
         String text = binary ? null : new String(buf, 0, len, StandardCharsets.UTF_8);
         return new FilePreview(file.getName(), clean, size, lastModified, binary, truncated, text);
+    }
+
+    /** Thrown by {@link #sha256(Run, String, long)} when a file is larger than the allowed limit. */
+    public static final class TooLargeException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        public TooLargeException(long size, long limit) {
+            super("File is " + size + " bytes, limit is " + limit + " bytes");
+        }
+    }
+
+    /**
+     * Resolves a sanitized relative path to a regular file inside the artifact root.
+     *
+     * @return the file, or {@code null} if there is no artifact root, the path is empty, does not refer to a file, or
+     *         escapes the root through a symlink
+     */
+    @CheckForNull
+    private static VirtualFile resolveReadableFile(Run<?, ?> run, String clean) throws IOException {
+        if (clean.isEmpty()) {
+            return null;
+        }
+        VirtualFile root = run.getArtifactManager().root();
+        if (root == null || !root.exists() || !root.isDirectory()) {
+            return null;
+        }
+        SymlinkGuard guard = new SymlinkGuard(root);
+        VirtualFile file = resolve(root, clean);
+        if (!file.isFile() || guard.escapes(file)) {
+            return null;
+        }
+        return file;
+    }
+
+    /**
+     * Computes the lowercase SHA-256 hex digest of a single artifact file.
+     *
+     * <p>The digest is computed on the controller so the browser never has to fetch artifact bytes itself, which keeps
+     * the explorer working when artifacts are served from a separate Resource Root URL.
+     *
+     * @param maxBytes largest file size that will be hashed
+     * @return the 64-character lowercase hex digest, or {@code null} if {@code path} does not refer to a readable file
+     *         inside the artifact root
+     * @throws TooLargeException if the file is larger than {@code maxBytes}
+     */
+    @CheckForNull
+    public static String sha256(Run<?, ?> run, String path, long maxBytes) throws IOException {
+        VirtualFile file = resolveReadableFile(run, sanitize(path));
+        if (file == null) {
+            return null;
+        }
+        long size = file.length();
+        if (size > maxBytes) {
+            throw new TooLargeException(size, maxBytes);
+        }
+        try (InputStream in = file.open()) {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] buf = new byte[8192];
+            int r;
+            while ((r = in.read(buf)) != -1) {
+                md.update(buf, 0, r);
+            }
+            return HexFormat.of().formatHex(md.digest());
+        } catch (IOException e) {
+            return null;
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

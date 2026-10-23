@@ -4,14 +4,14 @@ import hudson.Functions;
 import hudson.model.Action;
 import hudson.model.Run;
 import hudson.util.HttpResponses;
-import jakarta.servlet.ServletException;
 import java.io.IOException;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.HttpResponse;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
-import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.verb.GET;
 
 /**
@@ -28,6 +28,9 @@ public class ArtifactExplorerAction implements Action {
     /** Maximum number of bytes returned by {@link #doPreview(String)}. */
     static final int MAX_PREVIEW_BYTES = 128 * 1024;
 
+    /** Largest file {@link #doSha256(String)} will hash, so one request cannot tie up the controller for long. */
+    static final long MAX_SHA256_BYTES = 1024L * 1024 * 1024;
+
     private final Run<?, ?> run;
 
     public ArtifactExplorerAction(Run<?, ?> run) {
@@ -36,6 +39,11 @@ public class ArtifactExplorerAction implements Action {
 
     public Run<?, ?> getRun() {
         return run;
+    }
+
+    @Restricted(NoExternalUse.class) // for Jelly
+    public Run<?, ?> getObject() {
+        return getRun();
     }
 
     @Override
@@ -149,12 +157,23 @@ public class ArtifactExplorerAction implements Action {
         return HttpResponses.okJSON(data);
     }
 
-    /** The explorer page. Enforces the same permission as the classic artifact browser before rendering. */
+    /** {@code GET sha256?path=a/b.txt}: lowercase SHA-256 hex digest of a single file. */
     @GET
-    // lgtm[jenkins/csrf]
-    @SuppressWarnings("lgtm[jenkins/csrf]")
-    public void doIndex(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException, ServletException {
+    public HttpResponse doSha256(@QueryParameter String path) throws IOException {
         checkAccess();
-        req.getView(this, "index.jelly").forward(req, rsp);
+        String hash;
+        try {
+            hash = ArtifactTree.sha256(run, path, MAX_SHA256_BYTES);
+        } catch (IllegalArgumentException e) {
+            return HttpResponses.errorJSON("Invalid path");
+        } catch (ArtifactTree.TooLargeException e) {
+            return HttpResponses.errorJSON("File is too large to hash (limit 1 GiB)");
+        }
+        if (hash == null) {
+            return HttpResponses.errorJSON("Not a file");
+        }
+        JSONObject data = new JSONObject();
+        data.put("sha256", hash);
+        return HttpResponses.okJSON(data);
     }
 }
